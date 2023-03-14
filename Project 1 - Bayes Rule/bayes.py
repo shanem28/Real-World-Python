@@ -14,7 +14,7 @@ SA3_CORNERS = (105, 205, 155, 255)  # (UL-X, UL-Y, LR-X, LR-Y)
 class Search():
     '''Bayesian Search & Rescue game with 3 search areas.'''
 
-    def __init__(self, name) -> None:
+    def __init__(self, name: str) -> None:
         self.name = name
         self.img = cv.imread(MAP_FILE, cv.IMREAD_COLOR)
         if self.img is None:
@@ -44,7 +44,7 @@ class Search():
         self.sep2 = 0
         self.sep3 = 0
 
-    def draw_map(self, last_known):
+    def draw_map(self, last_known: tuple):
         '''Display the base map with scale, last known xy location, and search areas.'''
 
         # Map Scale
@@ -110,14 +110,46 @@ class Search():
         if area == 1:
             x = self.sailor_actual[0] + SA1_CORNERS[0]
             y = self.sailor_actual[1] + SA1_CORNERS[1]
+            self.area_actual = 1
         elif area == 2:
             x = self.sailor_actual[0] + SA2_CORNERS[0]
             y = self.sailor_actual[1] + SA2_CORNERS[1]
+            self.area_actual = 2
         elif area == 3:
             x = self.sailor_actual[0] + SA3_CORNERS[0]
             y = self.sailor_actual[1] + SA3_CORNERS[1]
+            self.area_actual = 3
 
         return x, y
+
+    def calc_search_effectiveness(self):
+        '''Set decimal search effectiveness value per search area'''
+        self.sep1 = random.uniform(0.2, 0.9)
+        self.sep2 = random.uniform(0.2, 0.9)
+        self.sep3 = random.uniform(0.2, 0.9)
+
+    def conduct_search(self, area_num: int, area_array: list, effectiveness_prob: float) -> list:
+        '''Return search results and list of coordinates
+
+        Arguments:
+            area_num -- integer of current area being searched
+            area_array -- array of the current area
+            effectiveness_prob -- float related to search effectiveness probability
+
+        Returns:
+            Found in Area if found along with the coordinates of the sailor or
+            Not Found along with the coordinates. 
+        '''
+        local_y_range = range(area_array.shape[0])
+        local_x_range = range(area_array.shape[1])
+        coords = list(itertools.product(local_x_range, local_y_range))
+        random.shuffle(coords)
+        coords = coords[:int((len(coords) * effectiveness_prob))]
+        loc_actual = (self.sailor_actual[0], self.sailor_actual[1])
+        if area_num == self.area_actual and loc_actual in coords:
+            return f'Found in Area {area_num}', coords
+        else:
+            return 'Not Found', coords
 
 
 def main():
