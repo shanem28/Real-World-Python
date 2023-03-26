@@ -55,19 +55,19 @@ class Search():
         cv.putText(self.img, '50 Nautical Miles', (71, 370),
                    cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 0))
 
-        # Search area 1
+        # Search area 1 graphic
         cv.rectangle(self.img, (SA1_CORNERS[0], SA1_CORNERS[1]),
                      (SA1_CORNERS[2], SA1_CORNERS[3]), (0, 0, 0), 1)
         cv.putText(
             self.img, '1', (SA1_CORNERS[0]+3, SA1_CORNERS[1]+15), cv.FONT_HERSHEY_PLAIN, 1, 0)
 
-        # Search area 2
+        # Search area 2 graphic
         cv.rectangle(self.img, (SA2_CORNERS[0], SA2_CORNERS[1]),
                      (SA2_CORNERS[2], SA2_CORNERS[3]), (0, 0, 0), 1)
         cv.putText(
             self.img, '2', (SA2_CORNERS[0]+3, SA2_CORNERS[1]+15), cv.FONT_HERSHEY_PLAIN, 1, 0)
 
-        # Search area 3
+        # Search area 3 graphic
         cv.rectangle(self.img, (SA3_CORNERS[0], SA3_CORNERS[1]),
                      (SA3_CORNERS[2], SA3_CORNERS[3]), (0, 0, 0), 1)
         cv.putText(
@@ -105,7 +105,7 @@ class Search():
         self.sailor_actual[0] = np.random.choice(self.sa1.shape[1])
         self.sailor_actual[1] = np.random.choice(self.sa1.shape[0])
 
-        # Uses a triangle distrabution to determine the area, and 2 will be picked most often (to align with project info)
+        # Uses a triangle distribution to determine the area, and 2 will be picked most often (to align with project info)
         area = int(random.triangular(1, num_search_areas + 1))
 
         # Converts the local coordinates above to global coordinates
@@ -155,7 +155,7 @@ class Search():
 
     def revise_target_probs(self):
         '''
-        Update the area target probabilitites based on search effictiveness.
+        Update the area target probabilities based on search effectiveness.
         '''
         denom = self.p1 * (1-self.sep1) + self.p2 * \
             (1-self.sep2) + self.p3 * (1-self.sep3)
