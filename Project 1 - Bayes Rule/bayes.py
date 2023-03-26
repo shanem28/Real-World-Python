@@ -21,6 +21,7 @@ class Search():
             print(
                 f'Could not load map file {MAP_FILE.format(file=sys.stderr)}')
             sys.exit(1)
+
         self.area_actual = 0
         self.sailor_actual = [0, 0]  # As local coordinates within search area
 
@@ -88,6 +89,7 @@ class Search():
         cv.imshow('Search Area', self.img)
         cv.moveWindow('Search Area', 750, 10)
         cv.waitKey(500)
+        # cv.destroyAllWindows()
 
     def sailor_final_location(self, num_search_areas: int) -> int:
         '''Return the actual x,y coordinates of the missing sailor.
@@ -100,8 +102,8 @@ class Search():
         '''
 
         # Find coordinates in respect to any Search Area sub array, as the arrays are the same size.
-        self.sailor_actual[0] = np.random.choice(self.sa1.shape[1], 1)
-        self.sailor_actual[1] = np.random.choice(self.sa1.shape[0], 1)
+        self.sailor_actual[0] = np.random.choice(self.sa1.shape[1])
+        self.sailor_actual[1] = np.random.choice(self.sa1.shape[0])
 
         # Uses a triangle distrabution to determine the area, and 2 will be picked most often (to align with project info)
         area = int(random.triangular(1, num_search_areas + 1))
@@ -151,10 +153,112 @@ class Search():
         else:
             return 'Not Found', coords
 
+    def revise_target_probs(self):
+        '''
+        Update the area target probabilitites based on search effictiveness.
+        '''
+        denom = self.p1 * (1-self.sep1) + self.p2 * \
+            (1-self.sep2) + self.p3 * (1-self.sep3)
+        self.p1 = self.p1 * (1-self.sep1) / denom
+        self.p2 = self.p2 * (1-self.sep2) / denom
+        self.p3 = self.p3 * (1-self.sep3) / denom
+
+
+def draw_menu(search_num):
+    '''Print menu of choices for conducting area searches.'''
+    print(f'\nSearch {search_num}')
+    print(
+        """
+        Choose next areas to search:
+        0 - Quit
+        1 - Search Area 1 twice
+        2 - Search Area 2 twice
+        3 - Search Area 3 twice
+        4 - Search Areas 1 & 2
+        5 - Search Areas 1 & 3
+        6 - Search Areas 2 & 3
+        7 - Start Over
+        """
+    )
+
 
 def main():
     app = Search('Cape Python')
     app.draw_map(last_known=(160, 290))
+    sailor_x, sailor_y = app.sailor_final_location(num_search_areas=3)
+    print('-'*65)
+    print('\nInitial Target (P) Probabilities:')
+    print(f'P1 = {app.p1:.3f}, P2 = {app.p2:.3f}, P3 = {app.p3:.3f}')
+    search_num = 1
+
+    while True:
+        app.calc_search_effectiveness()
+        draw_menu(search_num)
+        choice = input('Choice: ')
+        if choice == "0":
+            sys.exit()
+        elif choice == "1":
+            results_1, coords_1 = app.conduct_search(1, app.sa1, app.sep1)
+            results_2, coords_2 = app.conduct_search(1, app.sa1, app.sep1)
+            app.sep1 = (len(set(coords_1 + coords_2))) / (len(app.sa1)**2)
+            app.sep2 = 0
+            app.sep3 = 0
+        elif choice == "2":
+            results_1, coords_1 = app.conduct_search(2, app.sa2, app.sep2)
+            results_2, coords_2 = app.conduct_search(2, app.sa2, app.sep2)
+            app.sep1 = 0
+            app.sep2 = (len(set(coords_1 + coords_2))) / (len(app.sa2)**2)
+            app.sep3 = 0
+        elif choice == "3":
+            results_1, coords_1 = app.conduct_search(3, app.sa3, app.sep3)
+            results_2, coords_2 = app.conduct_search(3, app.sa3, app.sep3)
+            app.sep1 = 0
+            app.sep2 = 0
+            app.sep3 = (len(set(coords_1 + coords_2))) / (len(app.sa3)**2)
+        elif choice == "4":
+            results_1, coords_1 = app.conduct_search(1, app.sa1, app.sep1)
+            results_2, coords_2 = app.conduct_search(2, app.sa2, app.sep2)
+            app.sep3 = 0
+        elif choice == "5":
+            results_1, coords_1 = app.conduct_search(1, app.sa1, app.sep1)
+            results_2, coords_2 = app.conduct_search(2, app.sa3, app.sep3)
+            app.sep2 = 0
+        elif choice == "6":
+            results_1, coords_1 = app.conduct_search(2, app.sa2, app.sep2)
+            results_2, coords_2 = app.conduct_search(3, app.sa3, app.sep3)
+            app.sep1 = 0
+        elif choice == "7":
+            main()
+        else:
+            print(f"\nSorry, but that isn't a valid choice.", file=sys.stderr)
+            continue
+
+        app.revise_target_probs()
+        print(f"\nSearch {search_num} Results 1 = {results_1}",
+              file=sys.stderr)
+        print(f"\nSearch {search_num} Results 2 = {results_2}",
+              file=sys.stderr)
+        print(f"\nSearch {search_num} Effectiveness (E):")
+        print(f"E1 = {app.sep1:.3f}, E2 = {app.sep2:.3f}, E3 = {app.sep3:.3f}")
+
+        if results_1 == 'Not Found' and results_2 == 'Not Found':
+            print(
+                f"\nNew Target Probabilities (P) for Search {search_num + 1}")
+            print(
+                f"P1 = {app.p1:.3f}, P2 = {app.p2:.3f}, P3 = {app.p3:.3f}")
+        else:
+            print(f'Found at x = {sailor_x}, y = {sailor_y}')
+            cv.circle(app.img, (sailor_x, sailor_y), 3, (255, 0, 0), 1)
+            cv.destroyAllWindows()
+            cv.imshow('Search Area', app.img)
+            cv.waitKey(500)
+            choice = input('Play again (y/n)?: ')
+            if choice.upper() == 'Y':
+                main()
+            else:
+                sys.exit()
+
+        search_num += 1
 
 
 if __name__ == '__main__':
